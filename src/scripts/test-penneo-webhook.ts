@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { testPenneoWebhookSubscription } from '../api/services/webhook-subscription.service.js';
 
 try {
