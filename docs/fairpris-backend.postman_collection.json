@@ -1,0 +1,162 @@
+{
+  "info": {
+    "_postman_id": "fairpris-backend-v2",
+    "name": "Fairpris Backend API",
+    "description": "Postman collection for the Fairpris Penneo microservice",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "casefileId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+        "description": "Verify the service is running."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Agreement",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/agreement/create",
+          "host": ["{{baseUrl}}"],
+          "path": ["agreement", "create"]
+        },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer\": {\n    \"firstName\": \"Lars\",\n    \"lastName\": \"Jensen\",\n    \"email\": \"lars@example.com\",\n    \"phone\": \"12345678\"\n  },\n  \"agreement\": {\n    \"cprNumber\": \"010101-1234\",\n    \"address\": \"Nørrebrogade 1\",\n    \"zipCode\": \"2200\",\n    \"city\": \"København N\",\n    \"gsrnNumber\": \"571313000000000001\",\n    \"selectedProduct\": \"Spotpris Plus\",\n    \"moveInDate\": \"2026-08-01\"\n  }\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Creates a Penneo casefile, uploads PDF, adds signer, and returns the signing URL."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('casefileId', json.casefileId);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "OAuth – Initiate Flow",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/oauth/authorize",
+          "host": ["{{baseUrl}}"],
+          "path": ["oauth", "authorize"]
+        },
+        "description": "Starts the PKCE OAuth flow. Opens Penneo login page (follow redirects in browser)."
+      },
+      "response": []
+    },
+    {
+      "name": "OAuth – Callback (simulate)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/oauth/callback?code=REPLACE_WITH_CODE&state=REPLACE_WITH_STATE&casefileId={{casefileId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["oauth", "callback"],
+          "query": [
+            { "key": "code", "value": "REPLACE_WITH_CODE" },
+            { "key": "state", "value": "REPLACE_WITH_STATE" },
+            { "key": "casefileId", "value": "{{casefileId}}" }
+          ]
+        },
+        "description": "Simulates Penneo redirecting back after user login. Replace code/state with actual values."
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook – CaseFileCompleted",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/webhooks/penneo",
+          "host": ["{{baseUrl}}"],
+          "path": ["webhooks", "penneo"]
+        },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"CaseFileCompleted\",\n  \"caseFileId\": {{casefileId}},\n  \"timestamp\": \"2026-08-01T12:00:00Z\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Simulates Penneo sending a CaseFileCompleted webhook. Triggers Cube API sync."
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook – CaseFileSigned",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/webhooks/penneo",
+          "host": ["{{baseUrl}}"],
+          "path": ["webhooks", "penneo"]
+        },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"CaseFileSigned\",\n  \"caseFileId\": {{casefileId}},\n  \"timestamp\": \"2026-08-01T11:55:00Z\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Signed event — does NOT trigger Cube (not completed yet)."
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook – CaseFileRejected",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/webhooks/penneo",
+          "host": ["{{baseUrl}}"],
+          "path": ["webhooks", "penneo"]
+        },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"CaseFileRejected\",\n  \"caseFileId\": {{casefileId}},\n  \"timestamp\": \"2026-08-01T11:00:00Z\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "response": []
+      }
+    },
+    {
+      "name": "Legacy – Generate Agreement (flat payload)",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/generate-agreement",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "generate-agreement"]
+        },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Lars\",\n  \"lastName\": \"Jensen\",\n  \"cprNumber\": \"010101-1234\",\n  \"email\": \"lars@example.com\",\n  \"phone\": \"12345678\",\n  \"address\": \"Nørrebrogade 1\",\n  \"zipCode\": \"2200\",\n  \"city\": \"København N\",\n  \"gsrnNumber\": \"571313000000000001\",\n  \"selectedProduct\": \"Spotpris Plus\",\n  \"moveInDate\": \"2026-08-01\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Backward-compatible legacy endpoint (flat payload). Prefer /agreement/create."
+      },
+      "response": []
+    }
+  ]
+}
