@@ -7,8 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "webhook:setup": "tsx src/scripts/setup-penneo-webhook.ts",
-    "webhook:test": "tsx src/scripts/test-penneo-webhook.ts",
+    "webhook:setup": "node dist/scripts/setup-penneo-webhook.js",
+    "webhook:test": "node dist/scripts/test-penneo-webhook.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
