@@ -31,7 +31,7 @@ interface PenneoWebhookSubscriptionList {
 function validateWebhookEndpoint(endpoint: string): void {
   const url = new URL(endpoint);
   if (url.protocol !== 'https:') {
-    throw new HttpError(400, 'PENNEO_WEBHOOK_ENDPOINT must use HTTPS');
+    throw new HttpError(400, ' must use HTTPS');
   }
   if (
     url.hostname === 'localhost'

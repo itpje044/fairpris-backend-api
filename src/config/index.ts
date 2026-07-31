@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({quiet: true});
 
 function requireEnv(key: string): string {
   const val = process.env[key];
@@ -29,7 +29,7 @@ export const config = {
     apiBaseUrl: optionalEnv('PENNEO_API_BASE_URL', 'https://sandbox.penneo.com/api/v3'),
     webhookEndpoint: optionalEnv(
       'PENNEO_WEBHOOK_ENDPOINT',
-      `${optionalEnv('BASE_URL', 'http://localhost:3000')}/api/webhooks/penneo`,
+      'https://fairpris-backend-api-production.up.railway.app/api/webhooks/penneo',
     ),
     webhookSecret: optionalEnv('PENNEO_WEBHOOK_SECRET'),
   },

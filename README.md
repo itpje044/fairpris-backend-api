@@ -145,7 +145,7 @@ https://your-public-domain.example/api/webhooks/penneo
 Set the public HTTPS endpoint and create or update the Penneo subscription:
 
 ```env
-PENNEO_WEBHOOK_ENDPOINT=https://your-public-domain.example/api/webhooks/penneo
+4=https://your-public-domain.example/api/webhooks/penneo
 ```
 
 ```bash
