@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import crypto from 'crypto';
-import { config } from '../../config/index.js';
+import { EventEmitter } from 'events';
+import { config } from '../../config/index';
 
 export type AgreementStatus =
   | 'new'
@@ -24,7 +25,11 @@ export interface AgreementStatusUpdate {
 
 const STATUS_TTL_MS = 24 * 60 * 60 * 1000;
 const statuses = new Map<number, AgreementStatusUpdate>();
-const clients = new Map<number, Set<Response>>();
+
+// Event Manager for publishing and subscribing to agreement status updates
+export const agreementEventManager = new EventEmitter();
+agreementEventManager.setMaxListeners(0); // Unlimited listeners
+
 const TERMINAL_STATUSES = new Set<AgreementStatus>([
   'completed',
   'rejected',
@@ -35,8 +40,12 @@ const TERMINAL_STATUSES = new Set<AgreementStatus>([
 ]);
 
 function writeSse(res: Response, event: string, data: unknown): void {
+  if (res.writableEnded || res.destroyed) return;
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
+  if (typeof (res as unknown as { flush?: () => void }).flush === 'function') {
+    (res as unknown as { flush: () => void }).flush();
+  }
 }
 
 export function createAgreementStatusToken(casefileId: number): string {
@@ -96,9 +105,8 @@ export function setAgreementStatus(
   };
   statuses.set(casefileId, update);
 
-  for (const client of clients.get(casefileId) ?? []) {
-    writeSse(client, 'status', update);
-  }
+  // Emit event to EventManager
+  agreementEventManager.emit('status-update', update);
   return update;
 }
 
@@ -107,17 +115,24 @@ export function getStoredAgreementStatus(casefileId: number): AgreementStatusUpd
 }
 
 export function subscribeToAgreementStatus(casefileId: number, res: Response): () => void {
-  const casefileClients = clients.get(casefileId) ?? new Set<Response>();
-  casefileClients.add(res);
-  clients.set(casefileId, casefileClients);
-
+  // Send immediate connection acknowledge
   writeSse(res, 'connected', { casefileId });
+
+  // Send current status if exists
   const current = statuses.get(casefileId);
   if (current) writeSse(res, 'status', current);
 
+  // Listener function for EventManager
+  const onStatusUpdate = (update: AgreementStatusUpdate) => {
+    if (update.casefileId === casefileId) {
+      writeSse(res, 'status', update);
+    }
+  };
+
+  agreementEventManager.on('status-update', onStatusUpdate);
+
   return () => {
-    casefileClients.delete(res);
-    if (casefileClients.size === 0) clients.delete(casefileId);
+    agreementEventManager.off('status-update', onStatusUpdate);
   };
 }
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { penneoWebhookHandler } from '../controllers/webhook.controller.js';
+import { penneoWebhookHandler } from '../controllers/webhook.controller';
 
 const router = Router();
 

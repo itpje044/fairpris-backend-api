@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { config } from '../config/index.js';
+import { config } from '../config/index';
 
 const SENSITIVE_KEYS = ['access_token', 'refresh_token', 'client_secret', 'password', 'apiKey', 'api_key', 'digest'];
 

@@ -2,14 +2,14 @@
  * Shared TypeScript types for the Fairpris microservice
  */
 
-export interface CustomerInfo {
+export interface ICustomerInfo {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
 }
 
-export interface AgreementData {
+export interface IAgreementData {
   cprNumber?: string | undefined;
   address?: string | undefined;
   zipCode?: string | undefined;
@@ -22,7 +22,7 @@ export interface AgreementData {
 
 // ─── Penneo Types ─────────────────────────────────────────────────────────────
 
-export interface PenneoTokenResponse {
+export interface IPenneoTokenResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
@@ -31,31 +31,31 @@ export interface PenneoTokenResponse {
   refresh_token_expires_at?: number;
 }
 
-export interface PenneoCasefile {
+export interface IPenneoCasefile {
   id: number;
   title: string;
   status: string | number;
   metaData?: string;
 }
 
-export interface PenneoDocument {
+export interface IPenneoDocument {
   id: number;
   title: string;
   caseFileId: number;
 }
 
-export interface PenneoSigner {
+export interface IPenneoSigner {
   id: number;
   name: string;
 }
 
-export interface PenneoSigningRequest {
+export interface IPenneoSigningRequest {
   id: number;
   link: string;
   status: string;
 }
 
-export type PenneoAgreementStatus =
+export type IPenneoAgreementStatus =
   | 'new'
   | 'pending'
   | 'rejected'
@@ -65,7 +65,7 @@ export type PenneoAgreementStatus =
 
 // ─── Webhook Types ────────────────────────────────────────────────────────────
 
-export type PenneoWebhookEventType =
+export type IPenneoWebhookEventType =
   | 'sign.casefile.completed'
   | 'sign.casefile.expired'
   | 'sign.casefile.failed'
@@ -84,10 +84,10 @@ export type PenneoWebhookEventType =
   | 'sign.signer.transientBounce'
   | 'webhook.subscription.test';
 
-export interface PenneoWebhookPayload {
+export interface IPenneoWebhookPayload {
   id?: string;
-  event?: PenneoWebhookEventType;
-  eventType?: PenneoWebhookEventType;
+  event?: IPenneoWebhookEventType;
+  eventType?: IPenneoWebhookEventType;
   caseFileId?: number;
   casefileId?: number;
   casefile_id?: number;
@@ -102,26 +102,26 @@ export interface PenneoWebhookPayload {
 
 // ─── PKCE / OAuth Types ───────────────────────────────────────────────────────
 
-export interface PKCEPair {
+export interface IPKCEPair {
   codeVerifier: string;
   codeChallenge: string;
 }
 
-export interface OAuthState {
+export interface IOAuthState {
   codeVerifier: string;
   createdAt: number;
 }
 
 // ─── Internal Service Result Types ───────────────────────────────────────────
 
-export interface CreateAgreementResult {
+export interface ICreateAgreementResult {
   signingUrl: string;
   casefileId: number;
   statusToken: string;
   pdfUrl?: string;
 }
 
-export interface AppError extends Error {
+export interface IAppError extends Error {
   statusCode: number;
   isOperational: boolean;
 }

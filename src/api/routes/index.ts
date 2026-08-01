@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import agreementRoutes from './agreement.routes.js';
-import oauthRoutes from './oauth.routes.js';
-import webhookRoutes from './webhook.routes.js';
+import agreementRoutes from './agreement.routes';
+import oauthRoutes from './oauth.routes';
+import webhookRoutes from './webhook.routes';
 
 const router = Router();
 

@@ -1,9 +1,9 @@
 import type { Request, Response } from 'express';
-import { logger } from '../../utils/logger.js';
-import type { PenneoWebhookPayload, PenneoWebhookEventType } from '../../interfaces/index.js';
-import { setAgreementStatus, type AgreementStatus } from '../services/agreement-status.service.js';
-import { verifyPenneoWebhookSignature } from '../services/webhook-verification.service.js';
-import { config } from '../../config/index.js';
+import { logger } from '../../utils/logger';
+import type { IPenneoWebhookPayload, IPenneoWebhookEventType } from '../../interfaces/index';
+import { setAgreementStatus, type AgreementStatus } from '../services/agreement-status.service';
+import { verifyPenneoWebhookSignature } from '../services/webhook-verification.service';
+import { config } from '../../config/index';
 
 // Idempotency — deduplicate retried events
 const processedEvents = new Set<string>();
@@ -21,8 +21,7 @@ function findCasefileId(value: unknown, depth = 0): number | undefined {
   }
   return undefined;
 }
-
-function getCasefileId(payload: PenneoWebhookPayload): number | undefined {
+function getCasefileId(payload: IPenneoWebhookPayload): number | undefined {
   const bodyPayload = payload.payload;
   if (payload.topic === 'casefile') {
     const id = bodyPayload?.['id'];
@@ -40,7 +39,7 @@ function getCasefileId(payload: PenneoWebhookPayload): number | undefined {
   return findCasefileId(payload);
 }
 
-function getEventType(req: Request, payload: PenneoWebhookPayload): string | undefined {
+function getEventType(req: Request, payload: IPenneoWebhookPayload): string | undefined {
   const headerEvent = req.header('x-event-type');
   if (headerEvent) return headerEvent;
   const bodyEvent = payload.eventType ?? payload.event;
@@ -49,7 +48,7 @@ function getEventType(req: Request, payload: PenneoWebhookPayload): string | und
   return payload.topic ? `sign.${payload.topic}.${bodyEvent}` : bodyEvent;
 }
 
-function frontendStatusForEvent(event: PenneoWebhookEventType): AgreementStatus | undefined {
+function frontendStatusForEvent(event: IPenneoWebhookEventType): AgreementStatus | undefined {
   switch (event) {
     case 'sign.signer.opened':
     case 'sign.signer.requestOpened':
@@ -83,7 +82,7 @@ export const penneoWebhookHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const payload = req.body as PenneoWebhookPayload;
+    const penneoWebhookPayload = req.body as IPenneoWebhookPayload;
     const rawBody = (req as Request & { rawBody?: Buffer }).rawBody ?? Buffer.alloc(0);
 
     if (!config.penneo.webhookSecret) {
@@ -97,16 +96,16 @@ export const penneoWebhookHandler = async (
       return;
     }
 
-    const event = getEventType(req, payload);
+    const event = getEventType(req, penneoWebhookPayload);
     if (!event) {
       logger.warn('Webhook: received payload without event type');
       res.status(400).json({ received: false, message: 'Missing event type' });
       return;
     }
 
-    const casefileId = getCasefileId(payload);
-    const eventId = req.header('x-event-id') ?? payload.id
-      ?? `${event}-${casefileId ?? 'unknown'}-${payload.timestamp ?? payload.createdAt ?? ''}`;
+    const casefileId = getCasefileId(penneoWebhookPayload);
+    const eventId = req.header('x-event-id') ?? penneoWebhookPayload.id
+      ?? `${event}-${casefileId ?? 'unknown'}-${penneoWebhookPayload.timestamp ?? penneoWebhookPayload.createdAt ?? ''}`;
 
     if (processedEvents.has(eventId)) {
       logger.info('Webhook: duplicate event ignored', { eventId });
@@ -116,7 +115,7 @@ export const penneoWebhookHandler = async (
 
     logger.info('Webhook: event received', { event, casefileId });
 
-    switch (event as PenneoWebhookEventType) {
+    switch (event as IPenneoWebhookEventType) {
       case 'webhook.subscription.test':
         logger.info('Webhook: Penneo test event received successfully');
         break;
@@ -157,12 +156,12 @@ export const penneoWebhookHandler = async (
         logger.info('Webhook: unknown event type', { event, casefileId });
     }
 
-    const frontendStatus = frontendStatusForEvent(event as PenneoWebhookEventType);
+    const frontendStatus = frontendStatusForEvent(event as IPenneoWebhookEventType);
     if (frontendStatus && casefileId) {
       setAgreementStatus(casefileId, frontendStatus, event);
     } else if (frontendStatus && !casefileId) {
       logger.warn('Webhook: status event did not contain a casefile ID', { event });
-      res.status(422).json({ received: false, message: 'Missing casefile ID' });
+      res.status(422).json({ received: false, message: 'Manglende casefile ID' });
       return;
     }
 

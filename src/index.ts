@@ -1,12 +1,14 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import fs from 'fs';
-import { config } from './config/index.js';
-import { logger } from './utils/logger.js';
-import { globalErrorHandler, notFoundHandler } from './middleware/error.middleware.js';
-import routes from './api/routes/index.js';
+import { config } from './config/index';
+import { logger } from './utils/logger';
+import { globalErrorHandler, notFoundHandler } from './middleware/error.middleware';
+import routes from './api/routes/index';
 
 const app = express();
 
@@ -15,10 +17,20 @@ if (!fs.existsSync(pdfDir)) {
   fs.mkdirSync(pdfDir, { recursive: true });
 }
 
-app.use(cors());
+app.use(cors({
+  origin: true, // Dynamically reflects requesting origin, allowing ALL origins with credentials!
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['*'],
+  exposedHeaders: ['*'],
+}));
 app.use(express.static(path.join(process.cwd(), 'public'))); // serve frontend
 app.use('/pdfs', express.static(pdfDir)); // static PDFs
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
 app.use(express.json({
   limit: '5mb',
   verify: (req, _res, buffer) => {

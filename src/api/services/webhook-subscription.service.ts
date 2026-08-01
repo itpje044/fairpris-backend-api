@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { config } from '../../config/index.js';
-import { getApiKeysToken } from './oauth.service.js';
-import { ExternalServiceError, HttpError } from '../../middleware/error.middleware.js';
-import { logger } from '../../utils/logger.js';
+import { config } from '../../config/index';
+import { getApiKeysToken } from './oauth.service';
+import { ExternalServiceError, HttpError } from '../../middleware/error.middleware';
+import { logger } from '../../utils/logger';
 
 export const PENNEO_WEBHOOK_EVENT_TYPES = [
   'sign.casefile.completed',
@@ -31,7 +31,7 @@ interface PenneoWebhookSubscriptionList {
 function validateWebhookEndpoint(endpoint: string): void {
   const url = new URL(endpoint);
   if (url.protocol !== 'https:') {
-    throw new HttpError(400, ' must use HTTPS');
+    throw new HttpError(400, 'PENNEO_WEBHOOK_ENDPOINT must use HTTPS');
   }
   if (
     url.hostname === 'localhost'

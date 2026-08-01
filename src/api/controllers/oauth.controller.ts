@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 import {
   generatePKCE,
   buildAuthorizationUrl,
   exchangeCodeForToken,
   isTokenExpired,
 } from '../services/oauth.service.js';
-import { checkAgreementCompleted } from '../services/agreement.service.js';
-import { HttpError } from '../../middleware/error.middleware.js';
+import { checkAgreementCompleted } from '../services/agreement.service';
+import { HttpError } from '../../middleware/error.middleware';
 import crypto from 'crypto';
 
 // In-process PKCE state (state => { codeVerifier, createdAt })

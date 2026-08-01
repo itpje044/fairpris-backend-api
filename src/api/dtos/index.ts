@@ -1,1 +1,1 @@
-export * from './agreement.dto.js';
+export * from './agreement.dto';

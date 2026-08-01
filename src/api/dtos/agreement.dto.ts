@@ -2,14 +2,14 @@ import { body } from 'express-validator';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
-export interface CustomerInput {
+export interface CustomerDto {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
 }
 
-export interface AgreementInput {
+export interface AgreementDto {
   cprNumber?: string;
   address?: string;
   zipCode?: string;
@@ -20,12 +20,12 @@ export interface AgreementInput {
   [key: string]: unknown;
 }
 
-export interface CreateAgreementInput {
-  customer: CustomerInput;
-  agreement: AgreementInput;
+export interface CreateAgreementDto {
+  customer: CustomerDto;
+  agreement: AgreementDto;
 }
 
-export interface PdfPayload {
+export interface AgreementPdfPayloadDto {
   firstName: string;
   lastName: string;
   cprNumber: string;
@@ -37,27 +37,38 @@ export interface PdfPayload {
   gsrnNumber: string;
   selectedProduct: string;
   moveInDate?: string | undefined;
+  documentDate?: string | undefined;
+  paymentMethod?: string | undefined;
+  startDate?: string | undefined;
+  productMargin?: string | undefined;
+  productSubscription?: string | undefined;
+  balanceFee?: string | undefined;
+  subPrice?: string | undefined;
+  subMargin?: string | undefined;
+  prodMargin?: string | undefined;
+  prodSubscription?: string | undefined;
+  marketingConsent?: string | undefined;
 }
 
 // ─── Express Validator Rules ──────────────────────────────────────────────────
 
 export const createAgreementValidator = [
-  body('customer.firstName').isString().notEmpty().withMessage('First name is required'),
-  body('customer.lastName').isString().notEmpty().withMessage('Last name is required'),
-  body('customer.email').isEmail().withMessage('Invalid email format'),
-  body('customer.phone').isString().isLength({ min: 8 }).withMessage('Phone number is too short'),
+  body('customer.firstName').isString().notEmpty().withMessage('Fornavn er påkrævet'),
+  body('customer.lastName').isString().notEmpty().withMessage('Efternavn er påkrævet'),
+  body('customer.email').isEmail().withMessage('Ugyldigt e-mailformat'),
+  body('customer.phone').isString().isLength({ min: 8 }).withMessage('Telefonnummeret er for kort'),
 
   body('agreement.cprNumber')
-    .optional()
+    .optional({ checkFalsy: true })
     .matches(/^\d{6}-\d{4}$/)
-    .withMessage('Invalid CPR format (DDMMYY-XXXX)'),
-  body('agreement.address').optional().isString().notEmpty(),
-  body('agreement.zipCode').optional().isString().isLength({ min: 4 }),
-  body('agreement.city').optional().isString().notEmpty(),
+    .withMessage('Ugyldigt CPR-format (DDMMYY-XXXX)'),
+  body('agreement.address').optional({ checkFalsy: true }).isString().notEmpty(),
+  body('agreement.zipCode').optional({ checkFalsy: true }).isString().isLength({ min: 4 }),
+  body('agreement.city').optional({ checkFalsy: true }).isString().notEmpty(),
   body('agreement.gsrnNumber')
-    .optional()
-    .isLength({ min: 18, max: 18 }).withMessage('GSRN must be exactly 18 digits')
-    .matches(/^\d+$/).withMessage('GSRN must contain only digits'),
-  body('agreement.selectedProduct').optional().isString().notEmpty(),
-  body('agreement.moveInDate').optional().isString()
+    .optional({ checkFalsy: true })
+    .isLength({ min: 18, max: 18 }).withMessage('GSRN skal være præcis 18 cifre')
+    .matches(/^\d+$/).withMessage('GSRN må kun indeholde tal'),
+  body('agreement.selectedProduct').optional({ checkFalsy: true }).isString().notEmpty(),
+  body('agreement.moveInDate').optional({ checkFalsy: true }).isString()
 ];

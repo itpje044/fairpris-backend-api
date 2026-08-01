@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 import axios from 'axios';
-import { config } from '../../config/index.js';
-import { logger } from '../../utils/logger.js';
-import type { PKCEPair, PenneoTokenResponse } from '../../interfaces/index.js';
-import { ExternalServiceError, HttpError } from '../../middleware/error.middleware.js';
+import { config } from '../../config/index';
+import { logger } from '../../utils/logger';
+import type { IPKCEPair, IPenneoTokenResponse } from '../../interfaces/index';
+import { ExternalServiceError, HttpError } from '../../middleware/error.middleware';
 
 // ─── PKCE Helpers ─────────────────────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ export function generateCodeChallenge(codeVerifier: string): string {
 /**
  * Generate a PKCE pair: { codeVerifier, codeChallenge }.
  */
-export function generatePKCE(): PKCEPair {
+export function generatePKCE(): IPKCEPair {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   return { codeVerifier, codeChallenge };
@@ -65,7 +65,7 @@ export function buildAuthorizationUrl(options: BuildAuthUrlOptions): string {
 export async function exchangeCodeForToken(
   code: string,
   codeVerifier: string,
-): Promise<PenneoTokenResponse> {
+): Promise<IPenneoTokenResponse> {
   logger.info('OAuth: exchanging authorization code for access token');
 
   const tokenUrl = `${config.penneo.oauthBaseUrl}/oauth/token`;
@@ -80,7 +80,7 @@ export async function exchangeCodeForToken(
       code_verifier: codeVerifier,
     });
 
-    const response = await axios.post<PenneoTokenResponse>(tokenUrl, payload.toString(), {
+    const response = await axios.post<IPenneoTokenResponse>(tokenUrl, payload.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       timeout: 10_000,
     });
@@ -94,7 +94,7 @@ export async function exchangeCodeForToken(
 
 // ─── Refresh Token Grant ──────────────────────────────────────────────────────
 
-export async function refreshAccessToken(refreshToken: string): Promise<PenneoTokenResponse> {
+export async function refreshAccessToken(refreshToken: string): Promise<IPenneoTokenResponse> {
   logger.info('OAuth: refreshing access token');
 
   const tokenUrl = `${config.penneo.oauthBaseUrl}/oauth/token`;
@@ -107,7 +107,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<PenneoTo
       refresh_token: refreshToken,
     });
 
-    const response = await axios.post<PenneoTokenResponse>(tokenUrl, payload.toString(), {
+    const response = await axios.post<IPenneoTokenResponse>(tokenUrl, payload.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       timeout: 10_000,
     });
@@ -125,7 +125,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<PenneoTo
  * Obtain an access token via the API Keys grant (WSSE-based).
  * Used for automated server-to-server calls without user interaction.
  */
-export async function getApiKeysToken(): Promise<PenneoTokenResponse> {
+export async function getApiKeysToken(): Promise<IPenneoTokenResponse> {
   logger.info('OAuth: obtaining token via API Keys grant');
 
   const tokenUrl = `${config.penneo.oauthBaseUrl}/oauth/token`;
@@ -158,7 +158,7 @@ export async function getApiKeysToken(): Promise<PenneoTokenResponse> {
       digest,
     });
 
-    const response = await axios.post<PenneoTokenResponse>(
+    const response = await axios.post<IPenneoTokenResponse>(
       tokenUrl,
       payload.toString(),
       {

@@ -1,13 +1,12 @@
-import type { Request, Response, NextFunction } from 'express';
-
-import type { CreateAgreementInput } from '../dtos/agreement.dto.js';
-import { createAgreement, getAgreementStatus } from '../services/agreement.service.js';
-import { logger } from '../../utils/logger.js';
+import type { Request, Response } from 'express';
+import type { CreateAgreementDto } from '../dtos/agreement.dto';
+import { createAgreement, getAgreementStatus } from '../services/agreement.service';
+import { logger } from '../../utils/logger';
 import {
   getStoredAgreementStatus,
   subscribeToAgreementStatus,
   verifyAgreementStatusToken,
-} from '../services/agreement-status.service.js';
+} from '../services/agreement-status.service';
 
 function getStatusToken(req: Request): string {
   const header = req.header('x-agreement-status-token');
@@ -20,11 +19,10 @@ function getStatusToken(req: Request): string {
  */
 export const createAgreementHandler = async (
   req: Request,
-  res: Response,
-  next: NextFunction,
+  res: Response
 ): Promise<void> => {
   try {
-    const input = req.body as CreateAgreementInput;
+    const input = req.body as CreateAgreementDto;
     logger.info('Agreement create request received', {
       email: input.customer.email,
     });
@@ -35,7 +33,7 @@ export const createAgreementHandler = async (
       data: result,
     });
   } catch (err) {
-    next(err);
+    throw (err);
   }
 };
 
@@ -45,24 +43,22 @@ export const createAgreementHandler = async (
  */
 export const getAgreementStatusHandler = async (
   req: Request,
-  res: Response,
-  next: NextFunction,
+  res: Response
 ): Promise<void> => {
   try {
     const idParam = req.params.id;
     if (!idParam || typeof idParam !== 'string') {
-      res.status(400).json({ success: false, message: 'Invalid casefile ID' });
+      res.status(400).json({ success: false, message: 'Ugyldigt sagsnummer' });
       return;
     }
-
     const casefileId = parseInt(idParam, 10);
     if (!Number.isSafeInteger(casefileId) || casefileId <= 0) {
-      res.status(400).json({ success: false, message: 'Invalid casefile ID' });
+      res.status(400).json({ success: false, message: 'Ugyldigt sagsnummer' });
       return;
     }
 
     if (!verifyAgreementStatusToken(casefileId, getStatusToken(req))) {
-      res.status(401).json({ success: false, message: 'Invalid status token' });
+      res.status(401).json({ success: false, message: 'Ugyldigt statustoken' });
       return;
     }
 
@@ -71,14 +67,11 @@ export const getAgreementStatusHandler = async (
       res.status(200).json({ success: true, data: stored, source: 'webhook' });
       return;
     }
-
     const status = await getAgreementStatus(casefileId);
-
     if (!status) {
-      res.status(404).json({ success: false, message: 'Casefile status not found' });
+      res.status(404).json({ success: false, message: 'Sagsstatus ikke fundet' });
       return;
     }
-
     res.status(200).json({
       success: true,
       data: {
@@ -89,10 +82,9 @@ export const getAgreementStatusHandler = async (
       source: 'penneo',
     });
   } catch (err) {
-    next(err);
+    throw (err);
   }
 };
-
 /**
  * GET /agreement/events/:id
  * Server-Sent Events stream used by the frontend for instant status updates.
@@ -109,6 +101,12 @@ export const streamAgreementStatusHandler = (req: Request, res: Response): void 
     return;
   }
 
+  const origin = req.headers.origin;
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+
   res.status(200);
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -117,7 +115,11 @@ export const streamAgreementStatusHandler = (req: Request, res: Response): void 
   res.flushHeaders();
 
   const unsubscribe = subscribeToAgreementStatus(casefileId, res);
-  const keepAlive = setInterval(() => res.write(': keep-alive\n\n'), 25_000);
+  const keepAlive = setInterval(() => {
+    if (!res.writableEnded && !res.destroyed) {
+      res.write(': keep-alive\n\n');
+    }
+  }, 25_000);
 
   req.on('close', () => {
     clearInterval(keepAlive);

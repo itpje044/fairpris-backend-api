@@ -1,21 +1,21 @@
 import fs from 'fs';
 import path from 'path';
-import { generateAgreementPdf } from '../../integrations/pdf/pdf.service.js';
+import { generateAgreementPdf } from '../../integrations/pdf/pdf.service';
 import {
   createSigningCasefile,
   getCasefileStatus,
-} from '../../integrations/penneo/penneo.service.js';
-import { logger } from '../../utils/logger.js';
-import type { CreateAgreementInput } from '../dtos/agreement.dto.js';
-import type { CreateAgreementResult } from '../../interfaces/index.js';
-import { config } from '../../config/index.js';
+} from '../../integrations/penneo/penneo.service';
+import { logger } from '../../utils/logger';
+import type { CreateAgreementDto } from '../dtos/agreement.dto';
+import type { ICreateAgreementResult } from '../../interfaces/index';
+import { config } from '../../config/index';
 import {
   createAgreementStatusToken,
   normalizePenneoStatus,
   setAgreementStatus,
-} from './agreement-status.service.js';
+} from './agreement-status.service';
 
-export async function createAgreement(input: CreateAgreementInput): Promise<CreateAgreementResult> {
+export async function createAgreement(input: CreateAgreementDto): Promise<ICreateAgreementResult> {
   const { customer, agreement } = input;
   const fullName = `${customer.firstName} ${customer.lastName}`;
 
@@ -33,6 +33,17 @@ export async function createAgreement(input: CreateAgreementInput): Promise<Crea
     gsrnNumber: agreement.gsrnNumber ?? '',
     selectedProduct: agreement.selectedProduct ?? '',
     moveInDate: agreement.moveInDate,
+    documentDate: agreement.documentDate as string | undefined,
+    paymentMethod: agreement.paymentMethod as string | undefined,
+    startDate: agreement.startDate as string | undefined,
+    productMargin: agreement.productMargin as string | undefined,
+    productSubscription: agreement.productSubscription as string | undefined,
+    balanceFee: agreement.balanceFee as string | undefined,
+    subPrice: agreement.subPrice as string | undefined,
+    subMargin: agreement.subMargin as string | undefined,
+    prodMargin: agreement.prodMargin as string | undefined,
+    prodSubscription: agreement.prodSubscription as string | undefined,
+    marketingConsent: agreement.marketingConsent as string | undefined,
   };
 
   // 1. Generate PDF

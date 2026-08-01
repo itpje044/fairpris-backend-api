@@ -1,16 +1,8 @@
 import dotenv from 'dotenv';
-dotenv.config({quiet: true});
-
-function requireEnv(key: string): string {
-  const val = process.env[key];
-  if (!val) throw new Error(`Missing required environment variable: ${key}`);
-  return val;
-}
-
+dotenv.config();
 function optionalEnv(key: string, fallback = ''): string {
   return process.env[key] ?? fallback;
 }
-
 export const config = {
   server: {
     port: parseInt(optionalEnv('PORT', '3000'), 10),
@@ -23,17 +15,14 @@ export const config = {
     apiKey: optionalEnv('PENNEO_API_KEY'),
     apiSecret: optionalEnv('PENNEO_API_SECRET'),
     redirectUri: optionalEnv('PENNEO_REDIRECT_URI', 'http://localhost:3000/oauth/callback'),
-    signingSuccessUrl: optionalEnv('PENNEO_SIGNING_SUCCESS_URL'),
-    signingFailUrl: optionalEnv('PENNEO_SIGNING_FAIL_URL'),
+    signingStatusUrl: optionalEnv('PENNEO_SIGNING_STATUS_URL') || optionalEnv('PENNEO_SIGNING_REDIRECT_URL'),
     oauthBaseUrl: optionalEnv('PENNEO_OAUTH_BASE_URL', 'https://sandbox.oauth.penneo.cloud'),
     apiBaseUrl: optionalEnv('PENNEO_API_BASE_URL', 'https://sandbox.penneo.com/api/v3'),
     webhookEndpoint: optionalEnv(
       'PENNEO_WEBHOOK_ENDPOINT',
-      'https://fairpris-backend-api-production.up.railway.app/api/webhooks/penneo',
+      `${optionalEnv('BASE_URL', 'http://localhost:3000')}/api/webhooks/penneo`,
     ),
     webhookSecret: optionalEnv('PENNEO_WEBHOOK_SECRET'),
   },
-
 } as const;
-
 export type Config = typeof config;

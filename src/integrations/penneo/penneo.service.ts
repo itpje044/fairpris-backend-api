@@ -1,18 +1,17 @@
 import axios, { type AxiosInstance } from 'axios';
 import FormData from 'form-data';
-import { config } from '../../config/index.js';
-import { logger } from '../../utils/logger.js';
-import { getApiKeysToken, isTokenExpired } from '../../api/services/oauth.service.js';
-import { ExternalServiceError, HttpError } from '../../middleware/error.middleware.js';
+import { config } from '../../config/index';
+import { logger } from '../../utils/logger';
+import { getApiKeysToken, isTokenExpired } from '../../api/services/oauth.service';
+import { ExternalServiceError, HttpError } from '../../middleware/error.middleware';
 import type {
-  PenneoCasefile,
-  PenneoDocument,
-  PenneoSigner,
-  PenneoSigningRequest,
-  PenneoTokenResponse,
-  CustomerInfo,
-  AgreementData,
-} from '../../interfaces/index.js';
+  IPenneoCasefile,
+  IPenneoDocument,
+  IPenneoSigner,
+  IPenneoTokenResponse,
+  ICustomerInfo,
+  IAgreementData,
+} from '../../interfaces/index';
 
 // ─── Token Cache (in-process) ─────────────────────────────────────────────────
 
@@ -25,10 +24,10 @@ async function getValidAccessToken(): Promise<string> {
   }
 
   logger.debug('Penneo: refreshing access token via API Keys grant');
-  const tokenData: PenneoTokenResponse = await getApiKeysToken();
+  const tokenData: IPenneoTokenResponse = await getApiKeysToken();
   _cachedToken = tokenData.access_token;
   _tokenExpiresAt = Date.now() + tokenData.expires_in * 1000;
-  return _cachedToken;
+  return _cachedToken!;
 }
 
 // ─── Axios Client ─────────────────────────────────────────────────────────────
@@ -79,8 +78,8 @@ interface PenneoCasefileJobStatus {
  * this service returns and distributes the signing link itself.
  */
 export async function createSigningCasefile(
-  customer: CustomerInfo,
-  agreement: AgreementData,
+  customer: ICustomerInfo,
+  agreement: IAgreementData,
   pdfBuffer: Buffer,
 ): Promise<{ casefileId: number; signingUrl: string }> {
   const token = await getValidAccessToken();
@@ -111,11 +110,11 @@ export async function createSigningCasefile(
           signOrder: 0,
           accessControl: false,
           enableInsecureSigning: true,
-          ...(config.penneo.signingSuccessUrl
-            ? { successUrl: config.penneo.signingSuccessUrl }
+          ...(config.penneo.signingStatusUrl || config.penneo.signingStatusUrl
+            ? { successUrl: config.penneo.signingStatusUrl || config.penneo.signingStatusUrl }
             : {}),
-          ...(config.penneo.signingFailUrl
-            ? { failUrl: config.penneo.signingFailUrl }
+          ...(config.penneo.signingStatusUrl || config.penneo.signingStatusUrl
+            ? { failUrl: config.penneo.signingStatusUrl || config.penneo.signingStatusUrl }
             : {}),
         },
       ],
@@ -166,23 +165,15 @@ export async function createSigningCasefile(
         },
       );
       const job = statusResponse.data;
-      logger.debug('Penneo: casefile job status', {
-        attempt: attempt + 1,
-        jobStatus: job.jobStatus,
-      });
-
       if (job.jobStatus === 'failed') {
         throw new Error(`Penneo casefile job failed: ${job.errorMessage ?? JSON.stringify(job.result?.errors)}`);
       }
-
       if (job.jobStatus === 'completed') {
         const casefileId = job.result?.data?.caseFile?.id;
         const signingUrl = job.result?.data?.signingLinks?.[0]?.signingLink;
         if (!casefileId || !signingUrl) {
           throw new Error('Penneo completed the casefile without returning a signing link');
         }
-
-        logger.info('Penneo: complete casefile ready for signing', { casefileId });
         return { casefileId, signingUrl };
       }
     }
@@ -196,17 +187,14 @@ export async function createSigningCasefile(
 // ─── Casefile Operations ──────────────────────────────────────────────────────
 
 export async function createCasefile(
-  customer: CustomerInfo,
-  agreement: AgreementData,
-): Promise<PenneoCasefile> {
+  customer: ICustomerInfo,
+  agreement: IAgreementData,
+): Promise<IPenneoCasefile> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
   const title = `Elleverandøraftale - ${customer.firstName} ${customer.lastName}`;
-
-  logger.info('Penneo: creating casefile', { title });
-
   try {
-    const response = await client.post<PenneoCasefile>('/casefiles', {
+    const response = await client.post<IPenneoCasefile>('/casefiles', {
       title,
       metaData: JSON.stringify({ email: customer.email, phone: customer.phone, ...agreement }),
     });
@@ -222,14 +210,11 @@ export async function uploadDocument(
   casefileId: number,
   pdfBuffer: Buffer,
   title: string,
-): Promise<PenneoDocument> {
+): Promise<IPenneoDocument> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: uploading document', { casefileId, title });
-
   try {
-    const response = await client.post<PenneoDocument>(
+    const response = await client.post<IPenneoDocument>(
       '/documents',
       {
         caseFileId: casefileId,
@@ -238,8 +223,6 @@ export async function uploadDocument(
         type: 'signable',
       }
     );
-
-    logger.info('Penneo: document uploaded', { documentId: response.data.id });
     return response.data;
   } catch (err) {
     handlePenneoError(err, 'uploadDocument');
@@ -248,19 +231,14 @@ export async function uploadDocument(
 
 export async function addSigner(
   casefileId: number,
-  customer: CustomerInfo,
-): Promise<PenneoSigner> {
+  customer: ICustomerInfo,
+): Promise<IPenneoSigner> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: adding signer', { casefileId });
-
   try {
-    const response = await client.post<PenneoSigner>(`/casefiles/${casefileId}/signers`, {
+    const response = await client.post<IPenneoSigner>(`/casefiles/${casefileId}/signers`, {
       name: `${customer.firstName} ${customer.lastName}`,
     });
-
-    logger.info('Penneo: signer added', { signerId: response.data.id });
     return response.data;
   } catch (err) {
     handlePenneoError(err, 'addSigner');
@@ -299,23 +277,17 @@ export async function linkSignerToDocument(
 
 export async function configureSigningRequest(
   casefileId: number,
-  customer: CustomerInfo,
+  customer: ICustomerInfo,
 ): Promise<void> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  const successUrl = config.penneo.redirectUri;
-
-  logger.info('Penneo: configuring signing request', { casefileId });
 
   try {
     // 1. Fetch casefile to get the auto-generated signingRequest ID
     const cf = await client.get(`/casefiles/${casefileId}`);
     const signers = cf.data.signers;
     if (!signers || signers.length === 0) throw new Error('No signers found in casefile');
-
     const signingRequestId = signers[0].signingRequest.id;
-
     // 2. Update the signing request with email
     await client.put(`/signingrequests/${signingRequestId}`, {
       email: customer.email,
@@ -323,8 +295,6 @@ export async function configureSigningRequest(
       // flow rather than requiring identity validation before document access.
       accessControl: false,
     });
-
-    logger.info('Penneo: signing request configured successfully');
   } catch (err) {
     handlePenneoError(err, 'configureSigningRequest');
   }
@@ -333,14 +303,10 @@ export async function configureSigningRequest(
 export async function sendCasefile(casefileId: number): Promise<void> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: sending casefile for signing', { casefileId });
-
   try {
     // Penneo's direct casefile workflow requires /send to activate the
     // casefile. The signing link can still be distributed by our frontend.
     await client.patch(`/casefiles/${casefileId}/send`, {});
-    logger.info('Penneo: casefile activated for signing', { casefileId });
   } catch (err) {
     handlePenneoError(err, 'sendCasefile');
   }
@@ -351,9 +317,6 @@ export async function getSigningLink(
 ): Promise<string> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: retrieving signing link', { casefileId });
-
   try {
     const cf = await client.get(`/casefiles/${casefileId}`);
     const signers = cf.data.signers;
@@ -362,8 +325,6 @@ export async function getSigningLink(
     const signingRequestId = signers[0].signingRequest.id;
     // Penneo V3 requires a PATCH to /signingrequests/{id}/link which returns an array of links.
     const response = await client.patch<string[]>(`/signingrequests/${signingRequestId}/link`);
-
-    logger.info('Penneo: signing link retrieved');
     const link = response.data[0];
     if (!link) throw new Error('No signing link returned from Penneo');
     return link;
@@ -375,25 +336,19 @@ export async function getSigningLink(
 export async function getCasefileStatus(casefileId: number): Promise<string | number> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: fetching casefile status', { casefileId });
-
   try {
-    const response = await client.get<PenneoCasefile>(`/casefiles/${casefileId}`);
+    const response = await client.get<IPenneoCasefile>(`/casefiles/${casefileId}`);
     return response.data.status;
   } catch (err) {
     handlePenneoError(err, 'getCasefileStatus');
   }
 }
 
-export async function getCasefileDetails(casefileId: number): Promise<PenneoCasefile> {
+export async function getCasefileDetails(casefileId: number): Promise<IPenneoCasefile> {
   const token = await getValidAccessToken();
   const client = createPenneoClient(token);
-
-  logger.info('Penneo: fetching casefile details', { casefileId });
-
   try {
-    const response = await client.get<PenneoCasefile>(`/casefiles/${casefileId}`);
+    const response = await client.get<IPenneoCasefile>(`/casefiles/${casefileId}`);
     return response.data;
   } catch (err) {
     handlePenneoError(err, 'getCasefileDetails');
@@ -408,14 +363,12 @@ function handlePenneoError(err: unknown, context: string): never {
     const detail = JSON.stringify(err.response?.data ?? err.message);
     logger.error(`Penneo API error [${context}]`, { status, detail });
 
-    if (status === 400 || status === 422) throw new HttpError(400, `Penneo validation error: ${detail}`);
-    if (status === 401 || status === 403) throw new HttpError(401, 'Penneo authentication failed');
-    if (status === 404) throw new HttpError(404, `Penneo resource not found: ${context}`);
-    if (status >= 500) throw new ExternalServiceError('Penneo', `Server error (${status})`);
+    if (status === 400 || status === 422) throw new HttpError(400, `Penneo valideringsfejl: ${detail}`);
+    if (status === 401 || status === 403) throw new HttpError(401, 'Penneo godkendelse mislykkedes');
+    if (status === 404) throw new HttpError(404, `Penneo ressource ikke fundet: ${context}`);
+    if (status >= 500) throw new ExternalServiceError('Penneo', `Serverfejl (${status})`);
     if (err.code === 'ECONNABORTED') throw new HttpError(504, 'Penneo API timeout');
   }
-
   const detail = err instanceof Error ? err.message : String(err);
-  logger.error(`Penneo error [${context}]`, { detail });
   throw new ExternalServiceError('Penneo', detail);
 }

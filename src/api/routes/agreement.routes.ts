@@ -4,8 +4,8 @@ import {
   getAgreementStatusHandler,
   streamAgreementStatusHandler,
 } from '../controllers/agreement.controller.js';
-import { validate } from '../../middleware/validate.middleware.js';
-import { createAgreementValidator } from '../dtos/agreement.dto.js';
+import { validate } from '../../middleware/validate.middleware';
+import { createAgreementValidator } from '../dtos/agreement.dto';
 
 const router = Router();
 

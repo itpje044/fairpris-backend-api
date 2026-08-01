@@ -7,11 +7,11 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "webhook:setup": "node dist/scripts/setup-penneo-webhook.js",
-    "webhook:test": "node dist/scripts/test-penneo-webhook.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "webhook:setup": "tsx src/scripts/setup-penneo-webhook.ts",
+    "webhook:test": "tsx src/scripts/test-penneo-webhook.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +26,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.23.1",
     "typescript": "^5.8.3",
     "vitest": "^4.1.10"

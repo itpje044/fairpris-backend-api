@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 export class HttpError extends Error {
   constructor(
@@ -21,7 +21,7 @@ export class ValidationError extends HttpError {
 }
 
 export class NotFoundError extends HttpError {
-  constructor(message = 'Resource not found') {
+  constructor(message = 'Ressource ikke fundet') {
     super(404, message);
     this.name = 'NotFoundError';
   }
@@ -57,7 +57,7 @@ export const globalErrorHandler = (
     }
     res.status(statusCode).json({
       success: false,
-      message: isOperational ? err.message : 'An unexpected error occurred',
+      message: isOperational ? err.message : 'Der opstod en uventet fejl',
     });
     return;
   }
@@ -65,9 +65,9 @@ export const globalErrorHandler = (
   // Unknown errors – never expose details to the client in prod, but for debugging now:
   const msg = err instanceof Error ? err.message : String(err);
   logger.error('Unhandled error', { message: msg, error: err });
-  res.status(500).json({ success: false, message: `Internal Server Error: ${msg}` });
+  res.status(500).json({ success: false, message: `Intern serverfejl: ${msg}` });
 };
 
 export const notFoundHandler = (_req: Request, res: Response): void => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+  res.status(404).json({ success: false, message: 'Ruten blev ikke fundet' });
 };
