@@ -44,7 +44,8 @@ RUN mkdir -p public/pdfs
 EXPOSE 3000
 
 # Run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app/public
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
