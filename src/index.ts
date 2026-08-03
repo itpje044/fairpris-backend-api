@@ -5,10 +5,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import fs from 'fs';
-import { globalErrorHandler, notFoundHandler } from './middleware/error.middleware';
-import routes from './api/routes/index';
 import { config } from './config';
 import { logger } from './utils/logger';
+import { globalErrorHandler, notFoundHandler } from './middleware/error.middleware';
+import router from './api/routes';
 
 const app = express();
 
@@ -46,7 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/api', routes);
+app.use('/api', router);
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
