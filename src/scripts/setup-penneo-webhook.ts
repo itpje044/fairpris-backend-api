@@ -1,5 +1,4 @@
-import { setupPenneoWebhookSubscription } from '../api/services/webhook-subscription.service.js';
-
+import { setupPenneoWebhookSubscription } from "../api/services/webhook-subscription.service";
 try {
   const { subscription, created } = await setupPenneoWebhookSubscription();
   console.log(JSON.stringify({
