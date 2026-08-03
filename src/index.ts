@@ -5,10 +5,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import fs from 'fs';
-import { logger } from './utils/logger';
 import { globalErrorHandler, notFoundHandler } from './middleware/error.middleware';
 import routes from './api/routes/index';
 import { config } from './config';
+import { logger } from './utils/logger';
 
 const app = express();
 
