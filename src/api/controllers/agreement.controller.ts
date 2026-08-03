@@ -22,11 +22,11 @@ export const createAgreementHandler = async (
   res: Response
 ): Promise<void> => {
   try {
-    const input = req.body as CreateAgreementDto;
+    const agreementpayload = req.body as CreateAgreementDto;
     logger.info('Agreement create request received', {
-      email: input.customer.email,
+      email: agreementpayload.customer.email,
     });
-    const result = await createAgreement(input);
+    const result = await createAgreement(agreementpayload);
 
     res.status(200).json({
       success: true,
@@ -62,13 +62,13 @@ export const getAgreementStatusHandler = async (
       return;
     }
 
-    const stored = getStoredAgreementStatus(casefileId);
-    if (stored) {
-      res.status(200).json({ success: true, data: stored, source: 'webhook' });
+    const storedagreementstatus = getStoredAgreementStatus(casefileId);
+    if (storedagreementstatus) {
+      res.status(200).json({ success: true, data: storedagreementstatus, source: 'webhook' });
       return;
     }
-    const status = await getAgreementStatus(casefileId);
-    if (!status) {
+    const agreementstatus = await getAgreementStatus(casefileId);
+    if (!agreementstatus) {
       res.status(404).json({ success: false, message: 'Sagsstatus ikke fundet' });
       return;
     }
@@ -76,8 +76,8 @@ export const getAgreementStatusHandler = async (
       success: true,
       data: {
         casefileId,
-        status,
-        completed: status === 'completed',
+        agreementstatus,
+        completed: agreementstatus === 'completed',
       },
       source: 'penneo',
     });
