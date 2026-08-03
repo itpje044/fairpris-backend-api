@@ -12,6 +12,7 @@ export const generateAgreementPdf = async (data: AgreementPdfPayloadDto): Promis
       const logoBuffer = fs.readFileSync(logoPath);
       logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
     } catch (err) {
+      console.error('Failed to load logo for PDF:', err);
     }
 
     browser = await puppeteer.launch({
